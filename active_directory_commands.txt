@@ -1,1 +1,14 @@
-test
+Import-Module ActiveDirectory
+# One user detail
+Get-ADUser -Identity Ravindra.Sharma -Properties *
+
+Get-ADUser -Filter * -Properties * | Select-Object name, @{n='Manager';e={(Get-ADUser $_.manager).name}} | export-csv "c:\export.csv" -NoTypeInformation
+Get-ADUser -Filter { Enabled -eq $true } -Properties Title,Department,Manager -SearchBase "OU=Corp Users,DC=domain,DC=tld" -SearchScope Subtree | Format-Table Name,Title,Department,Manager
+Get-ADUser -Filter { Enabled -eq $true } -Properties Title,Department,Manager -SearchBase "OU=Corp Users,DC=domain,DC=tld" -SearchScope Subtree | Select-Object Name, Title, Department, @{n="ManagerName";e={get-aduser $_.manager | Select-Object -ExpandProperty name}}, @{n="ManagerMail";e={get-aduser $_.manager -properties mail | Select-Object -ExpandProperty mail}}
+
+
+
+
+
+
+
