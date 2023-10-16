@@ -1,5 +1,5 @@
-# PURPOSE      : COLLECT SERVER INFORMATION
-# CREATED DATE : SEPTEMBER 25, 2023
+# PURPOSE      : COLLECT SYSTEM INFORMATION
+# CREATED DATE : OCTOBER 16, 2023
 # CREATE BY    : RAVINDRA SHARMA
 # NOTED:       : YOU CAN RUN THIS SCRIPT IN ANY WINDOWS OPERATING SYSTEM
 
@@ -36,7 +36,7 @@ else {
 # SCRIPT TIME
 Write-Host ""
 $date_1 = Get-Date
-Write-Host "SCRIPT START: " -NoNewline
+Write-Host "SCRIPT STARTED: " -NoNewline
 Write-Host "$date_1" -ForegroundColor Blue
 Write-Host ""
 
@@ -77,36 +77,49 @@ $hostname_1 = (Get-CimInstance -ClassName Win32_ComputerSystem).Name
 $folder_name = "$hostname_1" + "_" + "$get_date_1"
 
 # DEFINE VARIABLES
+
+$export_txt_content = "$folder_name\00_content.txt"
+
 $export_txt_service = "$folder_name\01_service.txt"
 $export_txt_process = "$folder_name\02_process.txt"
 $export_txt_disk_volume = "$folder_name\03_disk_volume.txt"
 $export_txt_hotfix = "$folder_name\04_hotfix.txt"
 $export_txt_software = "$folder_name\05_software.txt"
-$export_txt_localuser = "$folder_name\06_local_user.txt"
-$export_txt_localgroup = "$folder_name\07_local_group.txt"
-$export_txt_windows_feature = "$folder_name\08_windows_feature.txt"
-$export_html_group_policy = "$folder_name\09_group_policy.html"
-$export_txt_ip_address = "$folder_name\10_ip_address.txt"
-$export_txt_system_info = "$folder_name\11_system_info.txt"
-$export_txt_get_computer_info = "$folder_name\12_get_computer_info.txt"
+$export_txt_rdp_session = "$folder_name\05_rdp_active_session.txt"
+$export_txt_localuser = "$folder_name\07_local_user.txt"
+$export_txt_localgroup = "$folder_name\08_local_group.txt"
+$export_txt_windows_feature = "$folder_name\09_windows_feature.txt"
+$export_html_group_policy = "$folder_name\10_group_policy.html"
+$export_txt_ip_address = "$folder_name\11_ip_address.txt"
+$export_txt_system_info = "$folder_name\12_system_info.txt"
+$export_txt_get_computer_info = "$folder_name\13_get_computer_info.txt"
 
+$export_event_viewer_system = "$folder_name\14_event_viewer_system.evtx"
+$export_event_viewer_application = "$folder_name\14_event_viewer_application.evtx"
+$export_event_viewer_setup = "$folder_name\14_event_viewer_setup.evtx"
+$export_event_viewer_security = "$folder_name\14_event_viewer_security.evtx"
 
-$export_event_viewer_system = "$folder_name\13_event_viewer_system.evtx"
-$export_event_viewer_application = "$folder_name\13_event_viewer_application.evtx"
-$export_event_viewer_setup = "$folder_name\13_event_viewer_setup.evtx"
-$export_event_viewer_security = "$folder_name\13_event_viewer_security.evtx"
+$export_txt_env = "$folder_name\15_system_env.txt"
 
-$export_txt_env = "$folder_name\14_system_env.txt"
+$export_txt_msinfo32 = "$folder_name\16_msinfo32.txt"
 
-$export_txt_msinfo32 = "$folder_name\15_msinfo32.txt"
+###################################################################################################
+
+# CREATE FOLDER
+New-Item -Path ".\" -Name "$folder_name" -ItemType "directory" | Out-Null
+Write-Host ""
+Write-Host "Log folder created in below path" -ForegroundColor Yellow
+Write-Host "$PSScriptRoot\$folder_name" -ForegroundColor Yellow
+#Write-Host "'$folder_name'" -ForegroundColor Yellow
+Write-Host ""
+
+###################################################################################################
+
+Write-Host "----------------------------------------------------" -ForegroundColor White
 
 ###################################################################################################
 
 # DISPLAY IN CONSOLE
-#Write-Host ""
-#Write-Host " Script is collecting the local system information. " -ForegroundColor White -BackgroundColor DarkGray -NoNewline
-#Write-Host " ." -ForegroundColor Black
-#Write-Host "----------------------------------------------------" -ForegroundColor White
 
 $content = @"
 
@@ -117,21 +130,23 @@ Script collecting the below system information
 03 - Volume/HDD (Get-Volume)
 04 - Patches (Get-HotFix)
 05 - Installed Software (Get-ItemProperty)
-06 - Local User (Get-LocalUser)
-07 - Local Group (Get-LocalGroup)
-08 - Installed Windows Features (Get-WindowsFeature)
-09 - Group Policy (gpresult)
-10 - IP Addresses (ipconfig)
-11 - System Information (systeminfo)
-12 - System Information (Get-ComputerInfo)
-13 - Event Viewer Logs (wevtutil)
-14 - User and System Environment (Get-ChildItem Env:)
-15 - System Information Including Hardware (msinfo32)
-
+06 - RDP Active Session (qwinsta)
+07 - Local User (Get-LocalUser)
+08 - Local Group (Get-LocalGroup)
+09 - Installed Windows Features (Get-WindowsFeature)
+10 - Group Policy (gpresult)
+11 - IP Addresses (ipconfig)
+12 - System Information (systeminfo)
+13 - System Information (Get-ComputerInfo)
+14 - Event Viewer Logs (wevtutil)
+15 - User and System Environment (Get-ChildItem Env:)
+16 - System Information Including Hardware (msinfo32)
 
 "@
 
 Write-Host "$content" -ForegroundColor Yellow
+
+$content | Out-File $export_txt_content
 
 ###################################################################################################
 
@@ -145,6 +160,7 @@ Write-Host "Detected . . ." -ForegroundColor Green
 Write-Host ""
 Write-Host "Hostname           : " -NoNewline -ForegroundColor Cyan
 (Get-CimInstance -ClassName Win32_OperatingSystem).CSName
+
 Write-Host "IP Address         : " -NoNewline -ForegroundColor Cyan
 (Get-CimInstance win32_networkadapterconfiguration | Where-Object { $_.IPAddress -ne $null } | Select-Object MACAddress, IPAddress).IPAddress
 Write-Host ""
@@ -157,29 +173,21 @@ Write-Host "Architecture       : " -NoNewline -ForegroundColor Cyan
 (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
 Write-Host ""
 
+
+Write-Host "Processor          : " -NoNewline -ForegroundColor Cyan
+(Get-CimInstance -ClassName Win32_Processor).Name
+Write-Host "RAM (GB)           : " -NoNewline -ForegroundColor Cyan
+(Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property capacity -Sum).sum /1gb
+Write-Host "HDD (GB)           : " -NoNewline -ForegroundColor Cyan
+(Get-PhysicalDisk | Select-Object @{n="Size";e={[math]::Round($_.Size/1GB,2)}}).Size
+Write-Host ""
+
 $install_date = (Get-CimInstance -ClassName Win32_OperatingSystem).InstallDate
 Write-Host "OS Install Date    : " -NoNewline -ForegroundColor Cyan
 Write-Host $install_date
 $up_time = (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime
 Write-Host "Last Boot Up Time  : " -NoNewline -ForegroundColor Cyan
 Write-Host $up_time
-Write-Host ""
-###################################################################################################
-
-#Get-CimInstance Win32_OperatingSystem | Select-Object @{Name = 'OS'; Expression = {$_.Caption}}, Version, ServicePackMajorVersion, OSArchitecture, CSName, WindowsDirectory
-
-###################################################################################################
-
-Write-Host "----------------------------------------------------" -ForegroundColor White
-
-###################################################################################################
-
-# CREATE FOLDER
-New-Item -Path ".\" -Name "$folder_name" -ItemType "directory" | Out-Null
-Write-Host ""
-Write-Host "Log folder created in below path" -ForegroundColor Yellow
-Write-Host "$PSScriptRoot\$folder_name" -ForegroundColor Yellow
-#Write-Host "'$folder_name'" -ForegroundColor Yellow
 Write-Host ""
 
 ###################################################################################################
@@ -208,11 +216,19 @@ foreach ($path in $paths) {
   Get-ChildItem -Path $path | Get-ItemProperty | Select-Object DisplayName, Publisher, InstallDate, DisplayVersion | Sort-Object DisplayName | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_software
 }
 
+###################################################################################################
+
+qwinsta /server:localhost | Out-File -Width 2000 $export_txt_rdp_session
+
+###################################################################################################
+
 Get-LocalUser | Select-Object Name, Enabled, UserMayChangePassword, PasswordRequired, LastLogon, PasswordChangeableDate, PasswordLastSet, Description | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_localuser
 
 #Get-LocalUser | Select-Object Name,Enabled,UserMayChangePassword,PasswordRequired,LastLogon,PasswordChangeableDate,PasswordLastSet,Description | Format-Table -AutoSize | Out-File -Width 2000 .\user_test.txt
 
 Get-LocalGroup | Select-Object Name, Description | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_localgroup
+
+###################################################################################################
 
 try { 
   Get-WindowsFeature | Where-Object { $_.InstallState -eq 'Installed' } | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_windows_feature  
@@ -221,22 +237,22 @@ catch {
   Write-Host ""
   Write-Host "Get-WindowsFeature - THIS IS ONLY SUPPORTED ON WINDOWS SERVER" -ForegroundColor Red
   Write-Host ""
-
+  Write-Host "----------------------------------------------------" -ForegroundColor White
 }
 
-###################################################################################################
-
-Write-Host "----------------------------------------------------" -ForegroundColor White
-
-###################################################################################################
-
 #Get-WindowsFeature | Where-Object {$_.InstallState -eq 'Installed'} | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_windows_feature
+
+###################################################################################################
 
 #https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/gpresult
 gpresult /h .\$export_html_group_policy
 
+###################################################################################################
+
 # GET IP ADDRESS DETAIL
 ipconfig /all | Out-File $export_txt_ip_address
+
+###################################################################################################
 
 # GET SYSTEM INFORMATION
 #https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/systeminfo
@@ -245,6 +261,8 @@ systeminfo /fo list | Out-File $export_txt_system_info
 # GET COMPUTER INFORMATION
 #https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-computerinfo?view=powershell-7.3
 #Notes: This cmdlet was introduced in Windows PowerShell 5.1.
+
+###################################################################################################
 
 try {
   Get-ComputerInfo | Out-File $export_txt_get_computer_info
@@ -262,6 +280,7 @@ catch {
 #(Get-ComputerInfo -Property OSName).OSName
 #(Get-ComputerInfo | Select-Object OSName).OSName
 
+###################################################################################################
 
 # EXPORT EVENT VIEWER
 # https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil
@@ -289,11 +308,56 @@ else {
   Write-Host ""
   Write-Host "Security event viewer logs not collected, it is required 'run as administrator'" -ForegroundColor Red
   Write-Host ""
+  Write-Host "----------------------------------------------------" -ForegroundColor White
 }
 
 
 #wevtutil epl Setup .\$folder_name\15_setup_dump.evtx
 #wevtutil epl Setup .\$folder_name\15_setup_dump.evtx
+
+###################################################################################################
+
+# Use the Get-ChildItem cmdlet to see a full list of environment variables:
+
+Get-ChildItem Env: | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_env
+
+###################################################################################################
+
+# COPY ALL EVENT LOGS FROM DIRECTORY "C:\Windows\System32\Winevt\Logs"
+Write-Host ""
+$confirmation = Read-Host "Do you want to capture all 'EVENT LOGS' (y/n)? "
+if ($confirmation -eq 'y') {
+# CHECKING ADMIN RIGHTS
+  if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host ""
+    Write-Host "Copy the security logs required to 'run as an administrator'." -ForegroundColor Red
+    Write-Host ""
+  }
+  else {
+    Copy-Item -Path "C:\Windows\System32\Winevt\Logs" -Destination ".\$folder_name" -Recurse
+  }  
+}
+
+###################################################################################################
+
+# GET MSSYSTEM32 INFO
+Write-Host ""
+$confirmation = Read-Host "Do you want to capture 'MSINFO32' (y/n)? "
+if ($confirmation -eq 'y') {
+  msinfo32 /report .\$export_txt_msinfo32
+  Start-Sleep -Seconds 5
+  Wait-Process -Name msinfo32
+  Write-Host "Completed !!" -ForegroundColor Green
+}
+
+###################################################################################################
+
+# SCRIPT TIME
+Write-Host ""
+$date_2 = Get-Date
+Write-Host "SCRIPT ENDED: " -NoNewline
+Write-Host "$date_2" -ForegroundColor Blue
+Write-Host ""
 
 ###################################################################################################
 
@@ -301,34 +365,10 @@ Write-Host "----------------------------------------------------" -ForegroundCol
 
 ###################################################################################################
 
-# Use the Get-ChildItem cmdlet to see a full list of environment variables:
-Get-ChildItem Env: | Format-Table -AutoSize | Out-File -Width 2000 $export_txt_env
-
-###################################################################################################
-
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-  Write-Host ""
-  Write-Host "Copy the security logs required to 'run as an administrator'." -ForegroundColor Red
-  Write-Host ""
-}
-else {
-  Copy-Item -Path "C:\Windows\System32\Winevt\Logs" -Destination ".\$folder_name" -Recurse
-}
-
-
-###################################################################################################
-
-# GET SYSTEM INFO
-msinfo32 /report .\$export_txt_msinfo32
-
-###################################################################################################
-
-# SCRIPT TIME
-Write-Host ""
-$date_1 = Get-Date
-Write-Host "SCRIPT END: " -NoNewline
-Write-Host "$date_1" -ForegroundColor Blue
-Write-Host ""
+# SCRIPT RUNNING TIME # I AM NOT USING 'New-TimeSpan' BECAUSE IT"S REQUIRED POWERSHELL VERSION 5.1 AND ABOVE
+$total_time = $date_2 - $date_1
+Write-Host "Script Runnning Time  HH:MM:SS:MS" -ForegroundColor Yellow
+Write-Host "                      $total_time" -ForegroundColor Cyan
 
 ###################################################################################################
 
