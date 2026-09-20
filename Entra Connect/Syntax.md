@@ -2,6 +2,10 @@ https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-s
 https://activedirectorypro.com/force-sync-azure-ad-connect-using-powershell/
 
 Import-Module ADSync
+
 Get-ADSyncScheduler
+
 Start-ADSyncSyncCycle -PolicyType Delta
+
 Start-ADSyncSyncCycle -PolicyType Initial
+
