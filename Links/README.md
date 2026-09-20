@@ -1,3 +1,5 @@
+_To make a link open in a new tab, use the keyboard shortcut **Ctrl + Click**_
+
 [Markdown Cheat Sheet](https://www.markdownguide.org/cheat-sheet/)
 
 [Markdown Basic Syntax](https://www.markdownguide.org/basic-syntax/)
